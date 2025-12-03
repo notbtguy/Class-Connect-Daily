@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bird Quiz Slingshot Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { 
+      box-sizing: border-box; 
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif; 
+    }
+
+    body {
+      background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 100%);
+      overflow: hidden;
+      height: 100vh;
+      position: relative;
+    }
+
+    .top-bar {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      z-index: 10;
+    }
+
+    .instructions {
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+      max-width: 220px;
+    }
+
+    .score-display {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .question-area {
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      font-size: 26px;
+      font-weight: bold;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 15px 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      max-width: 700px;
+      z-index: 10;
+    }
+
+    .ground {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 80px;
+      background: linear-gradient(180deg, #7CFC00 0%, #32CD32 100%);
+      border-top: 5px dashed #228B22;
+    }
+
+    .slingshot {
+      position: absolute;
+      left: 100px;
+      bottom: 80px;
+      width: 80px;
+      height: 140px;
+      z-index: 2;
+    }
+
+    .slingshot::before,
+    .slingshot::after {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 140px;
+      background: #8B4513;
+      bottom: 0;
+    }
+
+    .slingshot::before {
+      left: 0;
+      border-radius: 6px 6px 0 0;
+    }
+
+    .slingshot::after {
+      right: 0;
+      border-radius: 6px 6px 0 0;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 5;
+      cursor: grab;
+    }
+
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    .options {
+      position: absolute;
+      right: 80px;
+      top: 120px;
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+      z-index: 1;
+    }
+
+    .option {
+      width: 200px;
+      height: 90px;
+      background: #D2691E;
+      border: 6px solid #8B4513;
+      color: #000;
+      font-weight: bold;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      position: relative;
+      transition: transform 0.2s;
+    }
+
+    .option.hit {
+      animation: shake 0.5s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px) rotate(-5deg); }
+      75% { transform: translateX(10px) rotate(5deg); }
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 15px;
+      z-index: 10;
+    }
+
+    button {
+      padding: 12px 30px;
+      border-radius: 25px;
+      border: none;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      transition: transform 0.1s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .reset { 
+      background: #FF6347; 
+      color: white; 
+    }
+    
+    .pause { 
+      background: #FFD700; 
+      color: #333;
+    }
+
+    .confetti {
+      position: absolute;
+      pointer-events: none;
+      font-size: 30px;
+      z-index: 100;
+    }
+
+    @keyframes confettiFall {
+      0% { 
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+      }
+      100% { 
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes celebrate {
+      0% { transform: scale(0) rotate(0deg); opacity: 1; }
+      100% { transform: scale(2) rotate(360deg); opacity: 0; }
+    }
+
+    @keyframes fall {
+      0% { top: 0; opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="instructions">
+    Drag bird to aim & release!<br />
+    Hit the correct answer block!<br />
+    Made w/luv @Sanidhya.bt
+  </div>
+  <div class="score-display">Score: <span id="score">0</span></div>
+</div>
+
+<div class="question-area" id="question"></div>
+
+<div class="slingshot"></div>
+<canvas id="game"></canvas>
+
+<div class="options" id="options"></div>
+
+<div class="controls">
+  <button class="reset" onclick="resetGame()">Reset</button>
+  <button class="pause" onclick="togglePause()">Pause</button>
+</div>
+
+<div class="ground"></div>
+
+<script>
+// ================= QUESTIONS =================
+// HOW TO ADD YOUR QUESTIONS:
+// 1. Each question is an object with: q (question), options (array of 4 choices), answer (correct answer index 0-3)
+// 2. The answer is the INDEX (position) of the correct option, starting from 0
+// 3. Example: If "Paris" is the correct answer and it's at position 1 in the options array, then answer: 1
+
+const questions = [
+  { 
+    q: "What is Capital of France?", 
+    options: ["Italy", "Paris", "Germany", "Netherlands"], 
+    answer: 1  // "Paris" is at index 1
+  },
+  { 
+    q: "Which planet is known as the Red Planet?", 
+    options: ["Earth", "Mars", "Jupiter", "Venus"], 
+    answer: 1  // "Mars" is at index 1
+  },
+  { 
+    q: "2 + 2 = ?", 
+    options: ["3", "4", "5", "6"], 
+    answer: 1  // "4" is at index 1
+  },
+  { 
+    q: "What is 5 × 6?", 
+    options: ["25", "30", "35", "40"], 
+    answer: 1  // "30" is at index 1
+  },
+  { 
+    q: "Which is the largest ocean?", 
+    options: ["Atlantic", "Pacific", "Indian", "Arctic"], 
+    answer: 1  // "Pacific" is at index 1
+  }
+];
+// =============================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// Bird image
+let birdImg = new Image();
+let birdLoaded = false;
+birdImg.onload = () => { birdLoaded = true; };
+birdImg.onerror = () => { 
+  birdLoaded = false;
+  console.log("Bird image failed to load, using fallback");
+};
+birdImg.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Angry_Birds_red.svg/512px-Angry_Birds_red.svg.png";
+
+// Game state
+const slingshotX = 140;
+const slingshotY = canvas.height - 150;
+let bird = { 
+  x: slingshotX, 
+  y: slingshotY, 
+  r: 25, 
+  vx: 0, 
+  vy: 0, 
+  launched: false,
+  dragging: false
+};
+
+let dragStart = { x: slingshotX, y: slingshotY };
+let currentQuestion = 0;
+let score = 0;
+let paused = false;
+let chances = 3;
+
+// Load question
+function loadQuestion() {
+  const q = questions[currentQuestion];
+  // FIXED: Removed the "Chances" text from question display
+  document.getElementById('question').innerHTML = `<strong>Q.${currentQuestion + 1}</strong> ${q.q}`;
+
+  const optionsDiv = document.getElementById('options');
+  optionsDiv.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.innerHTML = `<strong>${i + 1}.</strong> ${opt}`;
+    div.dataset.index = i;
+    div.id = `option-${i}`;
+    optionsDiv.appendChild(div);
+  });
+}
+
+// FIXED: New confetti rain effect from top
+function rainConfetti() {
+  const emojis = ['🎉', '✨', '⭐', '🌟', '💫', '🎊', '🏆'];
+  const confettiCount = 50;
+  
+  for(let i = 0; i < confettiCount; i++) {
+    setTimeout(() => {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+      confetti.style.left = (Math.random() * window.innerWidth) + 'px';
+      confetti.style.top = '-100px';
+      confetti.style.animation = `confettiFall ${2 + Math.random() * 2}s linear forwards`;
+      confetti.style.animationDelay = (Math.random() * 0.5) + 's';
+      document.body.appendChild(confetti);
+      setTimeout(() => confetti.remove(), 4000);
+    }, i * 30);
+  }
+}
+
+function sadRain() {
+  for(let i = 0; i < 15; i++) {
+    setTimeout(() => {
+      const sad = document.createElement('div');
+      sad.className = 'confetti';
+      sad.innerText = '😢';
+      sad.style.left = Math.random() * window.innerWidth + 'px';
+      sad.style.top = '0px';
+      sad.style.animation = 'fall 2s linear forwards';
+      document.body.appendChild(sad);
+      setTimeout(() => sad.remove(), 2000);
+    }, i * 100);
+  }
+}
+
+// FIXED: Draw trajectory dots when dragging
+function drawTrajectory() {
+  if (bird.dragging && !bird.launched) {
+    const power = 0.4;
+    const vx = (slingshotX - bird.x) * power;
+    const vy = (slingshotY - bird.y) * power;
+    
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    
+    // Draw dotted trajectory path
+    for (let t = 0; t < 60; t += 3) {
+      const x = bird.x + vx * t;
+      const y = bird.y + vy * t + 0.6 * t * t / 2; // gravity effect
+      
+      if (y > canvas.height || x < 0 || x > canvas.width) break;
+      
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+// Mouse events
+let mouseX = 0, mouseY = 0;
+
+canvas.addEventListener('mousedown', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+  
+  const dist = Math.sqrt((mouseX - bird.x) ** 2 + (mouseY - bird.y) ** 2);
+  if (dist < bird.r + 10 && !bird.launched) {
+    bird.dragging = true;
+    dragStart = { x: bird.x, y: bird.y };
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+  
+  if (bird.dragging && !bird.launched) {
+    const dx = mouseX - slingshotX;
+    const dy = mouseY - slingshotY;
+    const maxDrag = 100;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (dist > maxDrag) {
+      bird.x = slingshotX + (dx / dist) * maxDrag;
+      bird.y = slingshotY + (dy / dist) * maxDrag;
+    } else {
+      bird.x = mouseX;
+      bird.y = mouseY;
+    }
+  }
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (bird.dragging && !bird.launched) {
+    bird.dragging = false;
+    const power = 0.4;
+    bird.vx = (slingshotX - bird.x) * power;
+    bird.vy = (slingshotY - bird.y) * power;
+    bird.launched = true;
+  }
+});
+
+// Touch events for mobile
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  mouseX = touch.clientX - rect.left;
+  mouseY = touch.clientY - rect.top;
+  
+  const dist = Math.sqrt((mouseX - bird.x) ** 2 + (mouseY - bird.y) ** 2);
+  if (dist < bird.r + 10 && !bird.launched) {
+    bird.dragging = true;
+    dragStart = { x: bird.x, y: bird.y };
+  }
+});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  mouseX = touch.clientX - rect.left;
+  mouseY = touch.clientY - rect.top;
+  
+  if (bird.dragging && !bird.launched) {
+    const dx = mouseX - slingshotX;
+    const dy = mouseY - slingshotY;
+    const maxDrag = 100;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (dist > maxDrag) {
+      bird.x = slingshotX + (dx / dist) * maxDrag;
+      bird.y = slingshotY + (dy / dist) * maxDrag;
+    } else {
+      bird.x = mouseX;
+      bird.y = mouseY;
+    }
+  }
+});
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (bird.dragging && !bird.launched) {
+    bird.dragging = false;
+    const power = 0.4;
+    bird.vx = (slingshotX - bird.x) * power;
+    bird.vy = (slingshotY - bird.y) * power;
+    bird.launched = true;
+  }
+});
+
+// Collision detection
+let collisionHandled = false;
+
+function detectCollision() {
+  // If collision already handled, don't check again
+  if (collisionHandled) return;
+  
+  const opts = document.querySelectorAll('.option');
+  let hit = false;
+  
+  opts.forEach(opt => {
+    const rect = opt.getBoundingClientRect();
+    if (bird.x + bird.r > rect.left && 
+        bird.x - bird.r < rect.right && 
+        bird.y + bird.r > rect.top && 
+        bird.y - bird.r < rect.bottom) {
+      
+      if (!hit && !collisionHandled) {
+        hit = true;
+        collisionHandled = true;
+        opt.classList.add('hit');
+        
+        // Stop the bird immediately
+        bird.vx = 0;
+        bird.vy = 0;
+        
+        if (parseInt(opt.dataset.index) === questions[currentQuestion].answer) {
+          score++;
+          document.getElementById('score').innerText = score;
+          // FIXED: Rain confetti from top instead of popup
+          rainConfetti();
+          setTimeout(() => {
+            nextQuestion();
+          }, 1500);
+        } else {
+          sadRain();
+          setTimeout(() => {
+            chances--;
+            if (chances <= 0) {
+              setTimeout(() => {
+                alert(`Game Over! Final Score: ${score}`);
+                resetGame();
+              }, 100);
+            } else {
+              resetBird();
+              loadQuestion();
+            }
+          }, 1500);
+        }
+      }
+    }
+  });
+
+  // Check if bird went off screen (only if launched)
+  if (bird.launched && !hit && !collisionHandled && (bird.y > canvas.height + 100 || bird.x < -100 || bird.x > canvas.width + 100)) {
+    collisionHandled = true;
+    bird.vx = 0;
+    bird.vy = 0;
+    chances--;
+    if (chances <= 0) {
+      setTimeout(() => {
+        alert(`Game Over! Final Score: ${score}`);
+        resetGame();
+      }, 100);
+    } else {
+      setTimeout(() => {
+        resetBird();
+        loadQuestion();
+      }, 800);
+    }
+  }
+}
+
+function nextQuestion() {
+  currentQuestion++;
+  if (currentQuestion >= questions.length) {
+    setTimeout(() => {
+      alert(`🎊 You completed all questions! Final Score: ${score}/${questions.length}`);
+      resetGame();
+    }, 100);
+  } else {
+    resetBird();
+    loadQuestion();
+  }
+}
+
+function resetBird() {
+  bird.x = slingshotX;
+  bird.y = slingshotY;
+  bird.vx = 0;
+  bird.vy = 0;
+  bird.launched = false;
+  bird.dragging = false;
+  collisionHandled = false;
+}
+
+function resetGame() {
+  score = 0;
+  currentQuestion = 0;
+  chances = 3;
+  paused = false;
+  document.getElementById('score').innerText = 0;
+  loadQuestion();
+  resetBird();
+}
+
+function togglePause() { 
+  paused = !paused;
+  document.querySelector('.pause').innerText = paused ? 'Resume' : 'Pause';
+}
+
+// Animation loop
+function animate() {
+  requestAnimationFrame(animate);
+  if (paused) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // FIXED: Draw trajectory dots first
+  drawTrajectory();
+
+  // Draw slingshot bands when dragging
+  if (bird.dragging || (!bird.launched && bird.x !== slingshotX)) {
+    ctx.strokeStyle = '#654321';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(slingshotX - 34, slingshotY);
+    ctx.lineTo(bird.x, bird.y);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(slingshotX + 34, slingshotY);
+    ctx.lineTo(bird.x, bird.y);
+    ctx.stroke();
+  }
+
+  // Update bird physics
+  if (bird.launched) {
+    bird.vy += 0.6; // gravity
+    bird.x += bird.vx;
+    bird.y += bird.vy;
+    bird.vx *= 0.99; // air resistance
+    detectCollision();
+  }
+
+  // Draw bird
+  if (birdLoaded && birdImg.complete && birdImg.naturalWidth > 0) {
+    ctx.save();
+    ctx.translate(bird.x, bird.y);
+    if (bird.launched) {
+      const angle = Math.atan2(bird.vy, bird.vx);
+      ctx.rotate(angle);
+    }
+    ctx.drawImage(birdImg, -bird.r, -bird.r, bird.r * 2, bird.r * 2);
+    ctx.restore();
+  } else {
+    // Fallback: Draw a red circle with face
+    ctx.fillStyle = '#FF0000';
+    ctx.beginPath();
+    ctx.arc(bird.x, bird.y, bird.r, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw angry eyes
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(bird.x - 8, bird.y - 5, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(bird.x + 8, bird.y - 5, 3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw eyebrows
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bird.x - 12, bird.y - 10);
+    ctx.lineTo(bird.x - 5, bird.y - 8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(bird.x + 12, bird.y - 10);
+    ctx.lineTo(bird.x + 5, bird.y - 8);
+    ctx.stroke();
+    
+    // Draw beak
+    ctx.fillStyle = '#FFA500';
+    ctx.beginPath();
+    ctx.moveTo(bird.x, bird.y + 5);
+    ctx.lineTo(bird.x - 5, bird.y + 10);
+    ctx.lineTo(bird.x + 5, bird.y + 10);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+// Initialize
+loadQuestion();
+animate();
+</script>
+
+</body>
+</html>

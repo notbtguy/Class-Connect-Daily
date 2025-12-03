@@ -1,0 +1,15 @@
+itle: ClassConnect Daily - The Ultimate Daily Update Tool for Teachers & Parents
+
+Description: In this video, I’m showcasing ClassConnect Daily, a new MVP SaaS tool designed to solve a massive problem in education: the communication gap between parents and teachers.
+
+Parents often feel disconnected from their child's daily progress, and by the time Parent-Teacher meetings happen, it's often too late to fix learning gaps. ClassConnect Daily fixes this by allowing teachers to generate professional, daily update cards in seconds.
+
+🚀 Key Features:
+
+5-Question Review: A dedicated section for 5 questions parents can ask their kids to track daily learning.
+
+Instant PDF Generation: Converts daily summaries into a clean, mobile-friendly A4 PDF.
+
+WhatsApp Friendly: Includes a "Copy Text" feature for quick messaging if files aren't needed.
+
+Structured Updates: Tracks homework, chapter context, and key content covered.
